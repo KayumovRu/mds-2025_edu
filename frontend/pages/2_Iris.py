@@ -11,4 +11,25 @@ def load_data():
 
 df = load_data()
 
-st.dataframe(df)
+species_options = df["Species"].unique()
+
+select_species = st.selectbox(
+    label="Выберите класс",
+    options=species_options,
+    label_visibility='collapsed',
+    index=None
+)
+
+filtred_df = df[df["Species"] == select_species]
+
+st.dataframe(filtred_df)
+
+x_axis = "Id"
+y_axis = st.selectbox("Y", df.columns[:-1])
+
+st.scatter_chart(
+    filtred_df,
+    x=x_axis,
+    y=y_axis,
+    color="Species"
+)
