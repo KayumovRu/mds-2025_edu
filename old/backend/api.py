@@ -12,6 +12,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.datasets import load_digits
 
+from old.backend.ml.train import train_model_big
+
 app = FastAPI()
 
 MODELS_DIR = "backend\models"
@@ -24,6 +26,12 @@ class TrainRequest(BaseModel):
     max_iter: int
     name: str
 
+class TrainRequestBig(BaseModel):
+    data_path: str
+    model_name: str
+    train_size: float
+    max_iter: int
+
 @app.get("/")
 def root():
     return {"message": "Сервер работает!"}
@@ -33,6 +41,7 @@ def calc_sum(item: Item):
     res = item.x + item.y
     return {"result": res}
 
+# таких функций здесь не оставляем
 def train_model(req):
     data = load_digits()
     X, y  = data.data, data.target
@@ -63,4 +72,18 @@ def train(req: TrainRequest, background_tasks: BackgroundTasks):
     return {
         "model_name": req.name,
         "message": "Model saved"
+    }
+
+
+@app.post("/train_big")
+def train_big(req: TrainRequestBig, background_tasks: BackgroundTasks):
+
+    print(req)
+    model_score = background_tasks.add_task(train_model_big, req)
+
+    return {
+        "model_name": req.model_name,
+        "train_size": req.train_size,
+        "model_score": model_score,
+        "message": "Model saved!"
     }
