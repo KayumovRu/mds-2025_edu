@@ -1,13 +1,13 @@
-import os
+from pathlib import Path
 import pickle
+import sqlite3
 import pandas as pd
-import time
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
 def train_model(filename: str, model_name: str, train_size: float):
-    path = os.path.join("data", filename)
+    path = Path("data") / filename
     df = pd.read_csv(path)
 
     target = df.columns[-1]
@@ -21,13 +21,20 @@ def train_model(filename: str, model_name: str, train_size: float):
     model = LogisticRegression(max_iter=1000)
     model.fit(X_train, y_train)
 
-    time.sleep(5)
-
     pred = model.predict(X_test)
     acc = accuracy_score(y_test, pred)
 
-    os.makedirs("models", exist_ok=True)
-    with open(os.path.join("models", f"{model_name}.pkl"), "wb") as f:
+    Path("models").mkdir(exist_ok=True)
+    model_path = Path("models") / f"{model_name}.pkl"
+    with open(model_path, "wb") as f:
         pickle.dump(model, f)
 
-    return {"accuracy": acc, "model_path": f"models/{model_name}.pkl"}
+    conn = sqlite3.connect("models.db")
+    conn.execute(
+        "INSERT INTO training_results (model_name, accuracy, model_path) VALUES (?, ?, ?)",
+        (model_name, acc, str(model_path)),
+    )
+    conn.commit()
+    conn.close()
+
+    return {"accuracy": acc, "model_path": str(model_path)}
